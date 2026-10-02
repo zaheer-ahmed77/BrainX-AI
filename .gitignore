@@ -25,7 +25,6 @@ pnpm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
-
 .idea/
 *.iml
 
@@ -40,6 +39,3 @@ desktop.ini
 
 # Coverage
 coverage/
-
-# Local environment
-*.local
