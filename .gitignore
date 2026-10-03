@@ -39,3 +39,15 @@ desktop.ini
 
 # Coverage
 coverage/
+
+# Backend
+__pycache__/
+*.pyc
+venv/
+env/
+backend/venv/
+backend/uploads/
+*.db
+backend/brainx.db
+.DS_Store
+*.pth

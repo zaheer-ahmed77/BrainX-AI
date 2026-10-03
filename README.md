@@ -1,171 +1,112 @@
-# BrainX AI
+# BrainXAI
 
-## AI Brain Tumor Diagnostic Copilot
+## Overview
+BrainXAI is an AI-powered medical diagnostic support application designed to assist with brain tumor analysis using MRI scans. It provides an agentic workflow connecting computer vision, Explainable AI (Grad-CAM), and Generative AI to provide a comprehensive, understandable analysis report.
 
-BrainX AI is an AI-powered medical diagnostic support application designed to assist with brain tumor analysis using MRI scans and patient information.
+## Features
+- **MRI Upload**: Secure upload and validation of brain MRI scans (JPG, PNG, WEBP).
+- **Deep Learning Analysis**: PyTorch-based image classification to detect tumor types (Glioma, Meningioma, Pituitary, or No Tumor).
+- **Explainable AI (Grad-CAM)**: Visualizes the areas of the MRI that influenced the AI model's prediction.
+- **Agentic AI Workflow**: An orchestrator that manages the analysis, visualization, and explanation phases.
+- **GenAI Explanation**: Uses Google Gemini to translate complex model outputs into human-readable text.
+- **AI Assistant**: A context-aware chat assistant that allows users to ask follow-up questions about their specific MRI results.
+- **Report Generation**: Generates a professional, downloadable PDF report containing the original MRI, Grad-CAM overlay, prediction, confidence, and AI explanation.
+- **Analysis History**: SQLite database integration to save and retrieve past analyses.
 
-The interface is designed around an agentic workflow:
+## Technology Stack
+**Frontend**:
+- React 19, Vite, Framer Motion, Lucide React, Vanilla CSS
 
-**Patient Information → MRI Upload → AI Analysis → XAI → GenAI Explanation → Medical Report**
+**Backend**:
+- Python 3, FastAPI, Uvicorn, SQLAlchemy, SQLite (Development)
 
-> **Important:** BrainX AI is a research/hackathon project and is not intended to replace professional medical diagnosis or clinical judgment.
+**AI & ML**:
+- PyTorch, Torchvision, OpenCV (Grad-CAM)
+- Google Generative AI (Gemini 1.5 Pro)
 
-## Current Development — Frontend
-
-This branch contains the initial BrainX AI frontend implementation, including:
-
-- Premium landing page
-- Login
-- Sign up
-- Forgot password UI
-- Dashboard/workspace
-- Browse/search case library
-- MRI file picker and drag-and-drop upload UI
-- Agentic processing workflow
-- Analysis results
-- Explainable AI / Grad-CAM presentation
-- Reports UI scaffold
-- AI assistant UI scaffold
-- Analysis history UI scaffold
-- Settings/help scaffolding
-- Responsive desktop, tablet and mobile layouts
-
-Authentication, user persistence, case data, MRI processing, AI inference, XAI results, GenAI explanations and report generation will be connected to the backend implementation.
-
-## Tech Stack
-
-### Frontend
-
-- React 19
-- Vite
-- JavaScript
-- Framer Motion
-- Lucide React
-- CSS design system
-
-### Planned Backend / AI
-
-- Python
-- FastAPI
-- Machine Learning
-- Deep Learning
-- Explainable AI
-- Generative AI
-- Agentic AI
-
-## Workflow
-
+## Architecture
 ```text
-Patient Information
+BrainXAI Frontend (React)
+        |
+        | REST API (FastAPI)
         ↓
-MRI Upload
-        ↓
-MRI Analysis
-        ↓
-Tumor Classification
-        ↓
-Explainable AI
-        ↓
-GenAI Explanation
-        ↓
-Medical Report
+Backend Services
+        |
+        ├── Image Processing & Validation
+        ├── PyTorch Model Inference
+        ├── Grad-CAM Heatmap Generation
+        ├── Agentic Orchestrator
+        ├── Gemini GenAI Explanation
+        ├── PDF Report Generator
+        └── SQLite Database (History)
 ```
 
-## Authentication Handoff
+## Local Setup
 
-The Login, Sign Up and Forgot Password screens are frontend-complete and prepared for backend API integration.
+### Environment Variables
+1. Navigate to the `backend` directory.
+2. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+3. Update the `.env` file with your credentials:
+   - `GENAI_API_KEY`: Your Google Gemini API Key.
+   - `MODEL_PATH`: Path to the trained PyTorch model (`.pth`).
 
-The current frontend validates form input and uses a temporary demo transition into the workspace. It does **not** implement real password storage, password hashing, sessions, JWTs, email verification, or server-side authentication.
+### Model Setup
+Place your trained PyTorch model (e.g., `brain_tumor_model.pth`) inside the `backend/models` directory, or update `MODEL_PATH` in your `.env` file to point to the correct absolute path.
+*Note: If the model is not found, the backend will return a 503 error instructing the user to upload a valid model.*
 
-The backend should later provide endpoints similar to:
+### Backend Setup
+1. Open a terminal and navigate to the `backend` folder.
+2. Create a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install fastapi uvicorn sqlalchemy pydantic python-multipart torch torchvision Pillow opencv-python google-generativeai python-dotenv reportlab
+   ```
+4. Start the server:
+   ```bash
+   uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+   ```
 
-```text
-POST /api/auth/login
-POST /api/auth/register
-POST /api/auth/forgot-password
-POST /api/auth/reset-password
-GET  /api/auth/me
-POST /api/auth/logout
-```
+### Frontend Setup
+1. Open a new terminal and navigate to the project root (where `package.json` is located).
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
 
-The exact endpoint names and request/response formats should be agreed with the backend implementation before integration.
+## API Documentation
+Once the backend is running, you can access the automatic interactive API documentation at:
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
 
-## Browse Handoff
+### Core Endpoints:
+- `POST /api/v1/analyze`: Upload MRI and perform complete agentic analysis.
+- `GET /api/v1/analyses`: Retrieve analysis history.
+- `GET /api/v1/analyses/{id}`: Retrieve a specific analysis.
+- `POST /api/v1/reports`: Generate a PDF report.
+- `POST /api/v1/ai/chat`: Chat with the context-aware AI assistant.
 
-The Browse Cases screen currently uses frontend demo data and includes:
+## Deployment
+For production deployment:
+1. **Frontend**: Build the React app (`npm run build`) and host it on Vercel, Netlify, or Nginx.
+2. **Backend**: Deploy the FastAPI app using Docker or a PaaS like Render, Heroku, or AWS Elastic Beanstalk. Ensure you set the environment variables in the production environment.
+3. **Database**: Switch from SQLite to PostgreSQL by updating the `DATABASE_URL` in the production environment.
+4. **CORS**: Update `CORS_ORIGINS` to match your production frontend URL.
 
-- Case search
-- Result filters
-- Case cards
-- Confidence display
-- Case status
-- Open-analysis action
+## Medical Disclaimer
+> **Important:** BrainXAI provides an AI-based preliminary analysis of brain MRI images for educational and informational purposes. It is **not** a medical diagnosis and should never replace professional evaluation by a qualified healthcare provider.
 
-The backend can replace the demo data with an authenticated cases API, for example:
-
-```text
-GET /api/cases
-GET /api/cases/{case_id}
-GET /api/cases?search=...
-```
-
-These are suggested API shapes, not implemented backend endpoints.
-
-## MRI Upload Handoff
-
-The upload screen supports selecting an image file from the device and drag-and-drop interaction. The selected file is currently held in frontend state.
-
-The backend member can later connect it to the actual MRI upload/inference endpoint.
-
-## Getting Started
-
-### 1. Clone the repository
-
-```bash
-git clone <repository-url>
-```
-
-### 2. Enter the project
-
-```bash
-cd <repository-name>
-```
-
-### 3. Install dependencies
-
-```bash
-npm install
-```
-
-### 4. Start the development server
-
-```bash
-npm run dev
-```
-
-### 5. Build for production
-
-```bash
-npm run build
-```
-
-## Branch Strategy
-
-Frontend work is developed on a feature branch before review and merge into `main`.
-
-Example:
-
-```text
-main
-├── wajeeha-frontend
-├── backend
-└── other-feature-branches
-```
-
-## Important Medical Disclaimer
-
-BrainX AI is an educational/research project. The system is not a substitute for professional medical advice, diagnosis, or treatment. AI-generated results should be reviewed by qualified medical professionals before being used for clinical decision-making.
-
-## Contributors
-
-- BrainX AI Development Team
+## Project Limitations
+- The current ML model integration assumes a ResNet-like architecture outputting 4 classes. It must be adapted if a different model architecture is used.
+- GenAI explanations rely on external API availability (Google Gemini).
+- Local SQLite database is not suitable for high-concurrency production environments (use PostgreSQL).
