@@ -1048,13 +1048,24 @@ function AuthContainer({ children, setAuthPage }) {
 export default function App() {
   const [authPage, setAuthPage] = useState("landing");
 
+  useEffect(() => {
+    const handleHash = () => {
+      if (window.location.hash.includes("sign-in")) setAuthPage("signin");
+      if (window.location.hash.includes("sign-up")) setAuthPage("signup");
+    };
+    window.addEventListener('hashchange', handleHash);
+    // Trigger on mount just in case
+    handleHash();
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
   return (
     <>
       <SignedOut>
         {authPage === "landing" && <Landing setAuthPage={setAuthPage} />}
         {(authPage === "signin" || authPage === "signup") && (
           <AuthContainer setAuthPage={setAuthPage}>
-            {authPage === "signup" ? <SignUp routing="virtual" signInUrl="/#signin" /> : <SignIn routing="virtual" signUpUrl="/#signup" />}
+            {authPage === "signup" ? <SignUp routing="hash" signInUrl="#/sign-in" /> : <SignIn routing="hash" signUpUrl="#/sign-up" />}
           </AuthContainer>
         )}
       </SignedOut>
