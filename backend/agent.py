@@ -30,11 +30,17 @@ import base64
 def validate_mri(image_path: str) -> bool:
     """
     Agentic GenAI step: Check if the uploaded image is actually a brain MRI before processing.
+    Returns False (reject) if unsure or on any error.
     """
+    # Detect MIME type from extension
+    ext = image_path.lower().rsplit('.', 1)[-1]
+    mime_map = {'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}
+    mime_type = mime_map.get(ext, 'image/jpeg')
+
     try:
         with open(image_path, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-            
+
         client = _get_client()
         response = client.chat.completions.create(
             model="llama-3.2-11b-vision-preview",
@@ -42,23 +48,35 @@ def validate_mri(image_path: str) -> bool:
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Look at this image. Is it a Brain MRI scan? Reply strictly with just 'YES' or 'NO'."},
+                        {
+                            "type": "text",
+                            "text": (
+                                "You are a strict medical image classifier. "
+                                "Examine the image carefully. "
+                                "A Brain MRI scan is a grayscale medical image showing cross-sections of the human brain — it has NO faces, NO people, NO text, NO outdoor scenes, and NO natural photographs. "
+                                "Is this image a Brain MRI scan suitable for tumor analysis? "
+                                "Reply with ONLY the single word YES or NO. Nothing else."
+                            )
+                        },
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": f"data:image/jpeg;base64,{encoded_string}",
+                                "url": f"data:{mime_type};base64,{encoded_string}",
                             }
                         }
                     ]
                 }
             ],
-            temperature=0.1,
-            max_tokens=10
+            temperature=0.0,
+            max_tokens=5
         )
-        return "YES" in response.choices[0].message.content.upper()
+        answer = response.choices[0].message.content.strip().upper()
+        print(f"[validate_mri] Vision model answer: '{answer}'")
+        return answer.startswith("YES")
     except Exception as e:
-        print(f"Validation failed (allowing through): {e}")
-        return True
+        print(f"[validate_mri] Validation error (blocking for safety): {e}")
+        # Fail closed: if we cannot validate, reject the image
+        return False
 
 def generate_explanation(analysis_data: Dict[str, Any]) -> str:
     """
