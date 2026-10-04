@@ -18,7 +18,7 @@ class Analysis(Base):
     __tablename__ = "analyses"
 
     id = Column(String, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(String, index=True)
     file_name = Column(String)
     image_path = Column(String)
     prediction = Column(String)
@@ -29,7 +29,6 @@ class Analysis(Base):
     explanation = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    owner = relationship("User", back_populates="analyses")
     report = relationship("Report", back_populates="analysis", uselist=False)
 
 class Report(Base):

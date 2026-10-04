@@ -7,7 +7,7 @@ import {
   LogOut, BarChart2, Eye, Zap, Bot, AlertTriangle, RefreshCw, Home, Clock, Users
 } from "lucide-react";
 import {
-  SignedIn, SignedOut, SignIn, SignUp, UserButton, useUser, useClerk, UserProfile
+  SignedIn, SignedOut, SignIn, SignUp, UserButton, useUser, useClerk, UserProfile, useAuth
 } from "@clerk/clerk-react";
 
 const API_BASE = "https://brainx-api-hge4dwaehbchfabh.centralindia-01.azurewebsites.net/api/v1";
@@ -218,15 +218,17 @@ function AppShell() {
   const [currentAnalysis, setCurrentAnalysis] = useState(null);
   const [loadingAnalyses, setLoadingAnalyses] = useState(false);
   const { user } = useUser();
+  const { userId } = useAuth();
 
   const fetchAnalyses = useCallback(async () => {
+    if (!userId) return;
     setLoadingAnalyses(true);
     try {
-      const res = await fetch(`${API_BASE}/analyses`);
+      const res = await fetch(`${API_BASE}/analyses`, { headers: { "X-User-Id": userId } });
       if (res.ok) setAnalyses(await res.json());
     } catch (e) { console.warn("Backend not available:", e); }
     finally { setLoadingAnalyses(false); }
-  }, []);
+  }, [userId]);
 
   useEffect(() => { fetchAnalyses(); }, [fetchAnalyses, page]);
 
@@ -295,12 +297,12 @@ function AppShell() {
           <AnimatePresence mode="wait">
             <motion.div key={page} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
               {page === "dashboard" && <Dashboard setPage={setPage} analyses={analyses} setCurrentAnalysis={setCurrentAnalysis} loading={loadingAnalyses} />}
-              {page === "upload" && <UploadPage setPage={setPage} setCurrentAnalysis={setCurrentAnalysis} onDone={fetchAnalyses} />}
+              {page === "upload" && <UploadPage setPage={setPage} setCurrentAnalysis={setCurrentAnalysis} onDone={fetchAnalyses} userId={userId} />}
               {page === "history" && <HistoryPage analyses={analyses} setCurrentAnalysis={setCurrentAnalysis} setPage={setPage} loading={loadingAnalyses} />}
               {page === "results" && <ResultsPage analysis={currentAnalysis} setPage={setPage} />}
               {page === "processing" && <ProcessingPage />}
-              {page === "reports" && <ReportsPage analysis={currentAnalysis} setPage={setPage} />}
-              {page === "assistant" && <AssistantPage analysis={currentAnalysis} setPage={setPage} />}
+              {page === "reports" && <ReportsPage analysis={currentAnalysis} setPage={setPage} userId={userId} />}
+              {page === "assistant" && <AssistantPage analysis={currentAnalysis} setPage={setPage} userId={userId} />}
               {page === "settings" && <SettingsPage />}
               {page === "about" && <AboutPage />}
             </motion.div>
@@ -418,7 +420,7 @@ function Dashboard({ setPage, analyses, setCurrentAnalysis, loading }) {
 }
 
 // ─── Upload Page ──────────────────────────────────────────────────────────────
-function UploadPage({ setPage, setCurrentAnalysis, onDone }) {
+function UploadPage({ setPage, setCurrentAnalysis, onDone, userId }) {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [dragging, setDragging] = useState(false);
@@ -439,7 +441,7 @@ function UploadPage({ setPage, setCurrentAnalysis, onDone }) {
     const fd = new FormData();
     fd.append("file", file);
     try {
-      const res = await fetch(`${API_BASE}/analyze`, { method: "POST", body: fd });
+      const res = await fetch(`${API_BASE}/analyze`, { method: "POST", headers: { "X-User-Id": userId }, body: fd });
       const data = await res.json();
       if (!res.ok) { 
         setError(data.detail || "Unknown error"); 
@@ -763,7 +765,7 @@ function HistoryPage({ analyses, setCurrentAnalysis, setPage, loading }) {
 }
 
 // ─── Reports Page ─────────────────────────────────────────────────────────────
-function ReportsPage({ analysis, setPage }) {
+function ReportsPage({ analysis, setPage, userId }) {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -773,7 +775,7 @@ function ReportsPage({ analysis, setPage }) {
     try {
       const res = await fetch(`${API_BASE}/reports`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-User-Id": userId },
         body: JSON.stringify({ analysis_id: analysis.id }),
       });
       const data = await res.json();
@@ -827,7 +829,7 @@ function ReportsPage({ analysis, setPage }) {
 }
 
 // ─── Assistant Page ───────────────────────────────────────────────────────────
-function AssistantPage({ analysis, setPage }) {
+function AssistantPage({ analysis, setPage, userId }) {
   const [messages, setMessages] = useState([
     { role: "assistant", text: "Hi! I'm the BrainXAI AI Assistant. I can answer questions about the current MRI analysis results. What would you like to know?" }
   ]);
@@ -848,7 +850,7 @@ function AssistantPage({ analysis, setPage }) {
     try {
       const res = await fetch(`${API_BASE}/ai/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-User-Id": userId },
         body: JSON.stringify({ message: msg, analysis_id: analysis.id }),
       });
       const data = await res.json();
@@ -1068,7 +1070,20 @@ export default function App() {
         {authPage === "landing" && <Landing setAuthPage={setAuthPage} />}
         {(authPage === "signin" || authPage === "signup") && (
           <AuthContainer setAuthPage={setAuthPage}>
-            {authPage === "signup" ? <SignUp routing="hash" signInUrl="#/sign-in" /> : <SignIn routing="hash" signUpUrl="#/sign-up" />}
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px", alignItems: "center", width: "100%" }}>
+              {authPage === "signup" ? (
+                <SignUp routing="virtual" appearance={{ elements: { footerAction: "hidden" } }} />
+              ) : (
+                <SignIn routing="virtual" appearance={{ elements: { footerAction: "hidden" } }} />
+              )}
+              <div style={{ textAlign: "center", color: "#64748b", fontSize: "14px", marginTop: "8px" }}>
+                {authPage === "signup" ? (
+                  <>Already have an account? <button onClick={() => { window.location.hash = '#/sign-in'; setAuthPage("signin"); }} style={{ background: "none", border: "none", color: "#2563eb", fontWeight: "600", cursor: "pointer", padding: 0, marginLeft: "4px" }}>Sign in</button></>
+                ) : (
+                  <>Not a user? <button onClick={() => { window.location.hash = '#/sign-up'; setAuthPage("signup"); }} style={{ background: "none", border: "none", color: "#2563eb", fontWeight: "600", cursor: "pointer", padding: 0, marginLeft: "4px" }}>Create an account</button></>
+                )}
+              </div>
+            </div>
           </AuthContainer>
         )}
       </SignedOut>

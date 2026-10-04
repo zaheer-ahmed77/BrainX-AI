@@ -1,7 +1,7 @@
 import os
 import uuid
 import shutil
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
@@ -36,7 +36,9 @@ def health_check():
     return {"status": "ok", "message": "BrainXAI Backend is running."}
 
 @app.post("/api/v1/analyze", response_model=schemas.AnalysisResult)
-async def analyze_mri(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def analyze_mri(file: UploadFile = File(...), x_user_id: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized: User ID missing")
     if not file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
         raise HTTPException(status_code=400, detail="Invalid image file format.")
     
@@ -82,7 +84,7 @@ async def analyze_mri(file: UploadFile = File(...), db: Session = Depends(get_db
     # 3. Save to DB
     db_analysis = models.Analysis(
         id=analysis_id,
-        user_id=1, # Mock user for now
+        user_id=x_user_id,
         file_name=file.filename,
         image_path=save_path,
         prediction=model_result['predicted_class'],
@@ -99,24 +101,30 @@ async def analyze_mri(file: UploadFile = File(...), db: Session = Depends(get_db
     return db_analysis
 
 @app.get("/api/v1/analyses", response_model=List[schemas.AnalysisResult])
-def list_analyses(db: Session = Depends(get_db)):
-    analyses = db.query(models.Analysis).order_by(models.Analysis.created_at.desc()).all()
+def list_analyses(x_user_id: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized: User ID missing")
+    analyses = db.query(models.Analysis).filter(models.Analysis.user_id == x_user_id).order_by(models.Analysis.created_at.desc()).all()
     return analyses
 
 @app.get("/api/v1/analyses/{analysis_id}", response_model=schemas.AnalysisResult)
-def get_analysis(analysis_id: str, db: Session = Depends(get_db)):
-    analysis = db.query(models.Analysis).filter(models.Analysis.id == analysis_id).first()
+def get_analysis(analysis_id: str, x_user_id: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized: User ID missing")
+    analysis = db.query(models.Analysis).filter(models.Analysis.id == analysis_id, models.Analysis.user_id == x_user_id).first()
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
     return analysis
 
 @app.post("/api/v1/reports")
-def create_report(request_data: dict, db: Session = Depends(get_db)):
+def create_report(request_data: dict, x_user_id: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized: User ID missing")
     analysis_id = request_data.get("analysis_id")
     if not analysis_id:
         raise HTTPException(status_code=400, detail="analysis_id is required")
 
-    analysis = db.query(models.Analysis).filter(models.Analysis.id == analysis_id).first()
+    analysis = db.query(models.Analysis).filter(models.Analysis.id == analysis_id, models.Analysis.user_id == x_user_id).first()
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
 
@@ -162,8 +170,10 @@ def get_image(filename: str):
     return FileResponse(file_path)
 
 @app.post("/api/v1/ai/chat")
-def chat_endpoint(request: schemas.ChatRequest, db: Session = Depends(get_db)):
-    analysis = db.query(models.Analysis).filter(models.Analysis.id == request.analysis_id).first()
+def chat_endpoint(request: schemas.ChatRequest, x_user_id: str = Header(None), db: Session = Depends(get_db)):
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized: User ID missing")
+    analysis = db.query(models.Analysis).filter(models.Analysis.id == request.analysis_id, models.Analysis.user_id == x_user_id).first()
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
 
