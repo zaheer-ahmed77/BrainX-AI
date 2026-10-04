@@ -10,7 +10,7 @@ import {
   SignedIn, SignedOut, SignIn, SignUp, UserButton, useUser, useClerk, UserProfile
 } from "@clerk/clerk-react";
 
-const API_BASE = "http://localhost:8000/api/v1";
+const API_BASE = "https://brainx-api-hge4dwaehbchfabh.centralindia-01.azurewebsites.net/api/v1";
 
 // ─── Landing Page ─────────────────────────────────────────────────────────────
 function Landing({ setAuthPage }) {
