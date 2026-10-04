@@ -7,7 +7,7 @@ import {
   LogOut, BarChart2, Eye, Zap, Bot, AlertTriangle, RefreshCw, Home, Clock, Users
 } from "lucide-react";
 import {
-  SignedIn, SignedOut, SignIn, SignUp, UserButton, useUser, useClerk, UserProfile, useAuth
+  SignedIn, SignedOut, UserButton, useUser, useAuth, useSignIn, useSignUp
 } from "@clerk/clerk-react";
 
 const API_BASE = "https://brainx-api-hge4dwaehbchfabh.centralindia-01.azurewebsites.net/api/v1";
@@ -29,8 +29,8 @@ function Landing({ setAuthPage }) {
           </div>
           <div className="lnav-actions desktop-only">
             <SignedOut>
-              <button className="btn btn-primary" onClick={() => { window.location.hash = '#/sign-up'; setAuthPage("signup"); }}>Access Platform <ArrowRight size={15} /></button>
-              <button className="btn btn-outline" style={{ marginLeft: "12px", border: "1px solid #cbd5e1" }} onClick={() => { window.location.hash = '#/sign-in'; setAuthPage("signin"); }}>Sign In</button>
+              <button className="btn btn-primary" onClick={() => setAuthPage("signup")}>Access Platform <ArrowRight size={15} /></button>
+              <button className="btn btn-outline" style={{ marginLeft: "12px", border: "1px solid #cbd5e1" }} onClick={() => setAuthPage("signin")}>Sign In</button>
             </SignedOut>
             <SignedIn>
               <UserButton />
@@ -44,8 +44,8 @@ function Landing({ setAuthPage }) {
         {menuOpen && (
           <div className="mobile-menu">
             <SignedOut>
-              <button className="btn btn-primary btn-block mb-12" onClick={() => { window.location.hash = '#/sign-up'; setAuthPage("signup"); }}>Access Platform</button>
-              <button className="btn btn-outline btn-block mb-12" onClick={() => { window.location.hash = '#/sign-in'; setAuthPage("signin"); }}>Sign In</button>
+              <button className="btn btn-primary btn-block mb-12" onClick={() => setAuthPage("signup")}>Access Platform</button>
+              <button className="btn btn-outline btn-block mb-12" onClick={() => setAuthPage("signin")}>Sign In</button>
             </SignedOut>
             <a href="#how" onClick={() => setMenuOpen(false)}>How it works</a>
             <a href="#features" onClick={() => setMenuOpen(false)}>Features</a>
@@ -70,8 +70,8 @@ function Landing({ setAuthPage }) {
             </div>
             <div className="hero-cta">
               <SignedOut>
-                <button className="btn btn-primary btn-lg" onClick={() => { window.location.hash = '#/sign-up'; setAuthPage("signup"); }}>Access Platform <ArrowRight size={16} /></button>
-                <button className="btn btn-outline btn-lg" style={{ marginLeft: "12px" }} onClick={() => { window.location.hash = '#/sign-in'; setAuthPage("signin"); }}>Sign In</button>
+                <button className="btn btn-primary btn-lg" onClick={() => setAuthPage("signup")}>Access Platform <ArrowRight size={16} /></button>
+                <button className="btn btn-outline btn-lg" style={{ marginLeft: "12px" }} onClick={() => setAuthPage("signin")}>Sign In</button>
               </SignedOut>
               <SignedIn>
                 {/* Redirect to app if already signed in */}
@@ -988,13 +988,180 @@ function AboutPage() {
   );
 }
 
-// ─── Shared Components ─────────────────────────────────────────────────────────
+// ─── Shared Components ────────────────────────────────────────────────────────
 function Logo() {
   return (
     <div className="logo-container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
       <img src="/logo.jpg" alt="BrainX AI Logo" className="logo-img" style={{ height: '32px', width: 'auto', borderRadius: '4px' }} />
       <span className="logo-text" style={{ fontWeight: 800, fontSize: '18px', letterSpacing: '0.5px', color: '#0f172a' }}>BRAINX-AI</span>
     </div>
+  );
+}
+
+// ─── Custom Sign In Form ──────────────────────────────────────────────────────
+function CustomSignIn({ onSwitch }) {
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!isLoaded) return;
+    setLoading(true);
+    setError("");
+    try {
+      const result = await signIn.create({ identifier: email, password });
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+      } else {
+        setError("Sign in incomplete. Please try again.");
+      }
+    } catch (err) {
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Sign in failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ width: "100%", maxWidth: "400px", display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div style={{ marginBottom: "8px" }}>
+        <h2 style={{ fontWeight: 800, fontSize: "24px", color: "#0f172a", margin: 0 }}>Sign in</h2>
+        <p style={{ color: "#64748b", fontSize: "14px", marginTop: "6px" }}>Welcome back to BrainX AI</p>
+      </div>
+      {error && <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", padding: "10px 14px", borderRadius: "8px", fontSize: "14px" }}>{error}</div>}
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Email address</label>
+        <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+          style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #d1d5db", fontSize: "15px", outline: "none", transition: "border 0.2s" }}
+          placeholder="you@example.com" />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Password</label>
+        <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
+          style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #d1d5db", fontSize: "15px", outline: "none" }}
+          placeholder="••••••••" />
+      </div>
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: "100%", padding: "12px", fontSize: "15px", justifyContent: "center" }}>
+        {loading ? <><RefreshCw size={15} className="spin" /> Signing in…</> : "Sign in"}
+      </button>
+      <p style={{ textAlign: "center", color: "#64748b", fontSize: "14px", margin: 0 }}>
+        Not a user?{" "}
+        <button type="button" onClick={onSwitch} style={{ background: "none", border: "none", color: "#2563eb", fontWeight: 600, cursor: "pointer", padding: 0 }}>Create an account</button>
+      </p>
+    </form>
+  );
+}
+
+// ─── Custom Sign Up Form ──────────────────────────────────────────────────────
+function CustomSignUp({ onSwitch }) {
+  const { signUp, setActive, isLoaded } = useSignUp();
+  const [step, setStep] = useState("form"); // 'form' | 'verify'
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    if (!isLoaded) return;
+    setLoading(true);
+    setError("");
+    try {
+      await signUp.create({ firstName, lastName, emailAddress: email, password });
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setStep("verify");
+    } catch (err) {
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Sign up failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    if (!isLoaded) return;
+    setLoading(true);
+    setError("");
+    try {
+      const result = await signUp.attemptEmailAddressVerification({ code });
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+      } else {
+        setError("Verification incomplete. Please try again.");
+      }
+    } catch (err) {
+      setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Verification failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (step === "verify") return (
+    <form onSubmit={handleVerify} style={{ width: "100%", maxWidth: "400px", display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div style={{ marginBottom: "8px" }}>
+        <h2 style={{ fontWeight: 800, fontSize: "24px", color: "#0f172a", margin: 0 }}>Verify your email</h2>
+        <p style={{ color: "#64748b", fontSize: "14px", marginTop: "6px" }}>We sent a code to <strong>{email}</strong>. Enter it below.</p>
+      </div>
+      {error && <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", padding: "10px 14px", borderRadius: "8px", fontSize: "14px" }}>{error}</div>}
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Verification code</label>
+        <input type="text" value={code} onChange={e => setCode(e.target.value)} required maxLength={6}
+          style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #d1d5db", fontSize: "20px", letterSpacing: "8px", textAlign: "center", outline: "none" }}
+          placeholder="000000" />
+      </div>
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: "100%", padding: "12px", fontSize: "15px", justifyContent: "center" }}>
+        {loading ? <><RefreshCw size={15} className="spin" /> Verifying…</> : "Verify Email"}
+      </button>
+    </form>
+  );
+
+  return (
+    <form onSubmit={handleRegister} style={{ width: "100%", maxWidth: "400px", display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div style={{ marginBottom: "8px" }}>
+        <h2 style={{ fontWeight: 800, fontSize: "24px", color: "#0f172a", margin: 0 }}>Create your account</h2>
+        <p style={{ color: "#64748b", fontSize: "14px", marginTop: "6px" }}>Join BrainX AI today</p>
+      </div>
+      {error && <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", padding: "10px 14px", borderRadius: "8px", fontSize: "14px" }}>{error}</div>}
+      <div style={{ display: "flex", gap: "12px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
+          <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>First name</label>
+          <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} required
+            style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #d1d5db", fontSize: "15px", outline: "none" }}
+            placeholder="John" />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: 1 }}>
+          <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Last name</label>
+          <input type="text" value={lastName} onChange={e => setLastName(e.target.value)}
+            style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #d1d5db", fontSize: "15px", outline: "none" }}
+            placeholder="Doe" />
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Email address</label>
+        <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
+          style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #d1d5db", fontSize: "15px", outline: "none" }}
+          placeholder="you@example.com" />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <label style={{ fontSize: "13px", fontWeight: 600, color: "#374151" }}>Password</label>
+        <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
+          style={{ padding: "10px 14px", borderRadius: "8px", border: "1px solid #d1d5db", fontSize: "15px", outline: "none" }}
+          placeholder="Min. 8 characters" />
+      </div>
+      <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: "100%", padding: "12px", fontSize: "15px", justifyContent: "center" }}>
+        {loading ? <><RefreshCw size={15} className="spin" /> Creating account…</> : "Create account"}
+      </button>
+      <p style={{ textAlign: "center", color: "#64748b", fontSize: "14px", margin: 0 }}>
+        Already have an account?{" "}
+        <button type="button" onClick={onSwitch} style={{ background: "none", border: "none", color: "#2563eb", fontWeight: 600, cursor: "pointer", padding: 0 }}>Sign in</button>
+      </p>
+    </form>
   );
 }
 
@@ -1053,37 +1220,15 @@ function AuthContainer({ children, setAuthPage }) {
 export default function App() {
   const [authPage, setAuthPage] = useState("landing");
 
-  useEffect(() => {
-    const handleHash = () => {
-      if (window.location.hash.includes("sign-in")) setAuthPage("signin");
-      if (window.location.hash.includes("sign-up")) setAuthPage("signup");
-    };
-    window.addEventListener('hashchange', handleHash);
-    // Trigger on mount just in case
-    handleHash();
-    return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
-
   return (
     <>
       <SignedOut>
         {authPage === "landing" && <Landing setAuthPage={setAuthPage} />}
         {(authPage === "signin" || authPage === "signup") && (
           <AuthContainer setAuthPage={setAuthPage}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px", alignItems: "center", width: "100%" }}>
-              {authPage === "signup" ? (
-                <SignUp routing="virtual" appearance={{ elements: { footerAction: "hidden" } }} />
-              ) : (
-                <SignIn routing="virtual" appearance={{ elements: { footerAction: "hidden" } }} />
-              )}
-              <div style={{ textAlign: "center", color: "#64748b", fontSize: "14px", marginTop: "8px" }}>
-                {authPage === "signup" ? (
-                  <>Already have an account? <button onClick={() => { window.location.hash = '#/sign-in'; setAuthPage("signin"); }} style={{ background: "none", border: "none", color: "#2563eb", fontWeight: "600", cursor: "pointer", padding: 0, marginLeft: "4px" }}>Sign in</button></>
-                ) : (
-                  <>Not a user? <button onClick={() => { window.location.hash = '#/sign-up'; setAuthPage("signup"); }} style={{ background: "none", border: "none", color: "#2563eb", fontWeight: "600", cursor: "pointer", padding: 0, marginLeft: "4px" }}>Create an account</button></>
-                )}
-              </div>
-            </div>
+            {authPage === "signup"
+              ? <CustomSignUp onSwitch={() => setAuthPage("signin")} />
+              : <CustomSignIn onSwitch={() => setAuthPage("signup")} />}
           </AuthContainer>
         )}
       </SignedOut>

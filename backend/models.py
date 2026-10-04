@@ -12,8 +12,6 @@ class User(Base):
     password_hash = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    analyses = relationship("Analysis", back_populates="owner")
-
 class Analysis(Base):
     __tablename__ = "analyses"
 
