@@ -278,18 +278,12 @@ function AppShell() {
 
       {/* Main */}
       <div className="app-main">
-        <header className="app-header">
+        <header className="app-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button className="header-burger" onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
-          <div className="header-breadcrumb" style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ transform: "scale(0.9)", transformOrigin: "left center", display: "flex" }}>
-              <Logo />
-            </div>
-            <ChevronRight size={13} className="hb-sep" style={{ marginLeft: "4px" }} />
-            <span className="hb-current">{nav.find(n => n.id === page)?.label || "Dashboard"}</span>
+          <div className="header-breadcrumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+            <span className="hb-current" style={{ fontWeight: 700, fontSize: '18px', color: '#0f172a' }}>{nav.find(n => n.id === page)?.label || "Dashboard"}</span>
           </div>
           <div className="header-right">
-            <div className="status-pill"><span className="status-green" />System Ready</div>
-            {user && <span className="header-mode">DEMO MODE</span>}
             <UserButton afterSignOutUrl="/" />
           </div>
         </header>
@@ -992,9 +986,9 @@ function AboutPage() {
 // ─── Shared Components ─────────────────────────────────────────────────────────
 function Logo() {
   return (
-    <div className="logo-container">
-      <img src="/logo.jpg" alt="BrainX AI Logo" className="logo-img" />
-      <span className="logo-text">BRAINX-AI</span>
+    <div className="logo-container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <img src="/logo.jpg" alt="BrainX AI Logo" className="logo-img" style={{ height: '32px', width: 'auto', borderRadius: '4px' }} />
+      <span className="logo-text" style={{ fontWeight: 800, fontSize: '18px', letterSpacing: '0.5px', color: '#0f172a' }}>BRAINX-AI</span>
     </div>
   );
 }
@@ -1060,7 +1054,7 @@ export default function App() {
         {authPage === "landing" && <Landing setAuthPage={setAuthPage} />}
         {(authPage === "signin" || authPage === "signup") && (
           <AuthContainer setAuthPage={setAuthPage}>
-            <SignUp routing="hash" />
+            {authPage === "signup" ? <SignUp routing="virtual" signInUrl="/#signin" /> : <SignIn routing="virtual" signUpUrl="/#signup" />}
           </AuthContainer>
         )}
       </SignedOut>
