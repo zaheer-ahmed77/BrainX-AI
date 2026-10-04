@@ -300,7 +300,6 @@ function AppShell() {
               {page === "upload" && <UploadPage setPage={setPage} setCurrentAnalysis={setCurrentAnalysis} onDone={fetchAnalyses} userId={userId} />}
               {page === "history" && <HistoryPage analyses={analyses} setCurrentAnalysis={setCurrentAnalysis} setPage={setPage} loading={loadingAnalyses} />}
               {page === "results" && <ResultsPage analysis={currentAnalysis} setPage={setPage} />}
-              {page === "processing" && <ProcessingPage />}
               {page === "reports" && <ReportsPage analysis={currentAnalysis} setPage={setPage} userId={userId} />}
               {page === "assistant" && <AssistantPage analysis={currentAnalysis} setPage={setPage} userId={userId} />}
               {page === "settings" && <SettingsPage />}
@@ -425,6 +424,7 @@ function UploadPage({ setPage, setCurrentAnalysis, onDone, userId }) {
   const [preview, setPreview] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const inputRef = useRef(null);
 
   const handleFile = (f) => {
@@ -437,7 +437,7 @@ function UploadPage({ setPage, setCurrentAnalysis, onDone, userId }) {
   const analyze = async () => {
     if (!file) return;
     setError(null);
-    setPage("processing");
+    setIsProcessing(true);
     const fd = new FormData();
     fd.append("file", file);
     try {
@@ -445,17 +445,22 @@ function UploadPage({ setPage, setCurrentAnalysis, onDone, userId }) {
       const data = await res.json();
       if (!res.ok) { 
         setError(data.detail || "Unknown error"); 
-        setPage("upload"); 
+        setIsProcessing(false); 
         return; 
       }
       setCurrentAnalysis(data);
       onDone();
+      setIsProcessing(false);
       setPage("results");
     } catch (e) {
-      setError("Could not reach the backend. Make sure the Python server is running on port 8000.");
-      setPage("upload");
+      setError("Could not reach the backend. Check your network or server status.");
+      setIsProcessing(false);
     }
   };
+
+  if (isProcessing) {
+    return <ProcessingPage />;
+  }
 
   return (
     <div className="page">
