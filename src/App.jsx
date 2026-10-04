@@ -781,7 +781,7 @@ function ReportsPage({ analysis, setPage }) {
       });
       const data = await res.json();
       if (data.file_url) {
-        window.open(`http://localhost:8000${data.file_url}`, "_blank");
+        window.open(`${API_BASE.replace('/api/v1', '')}${data.file_url}`, "_blank");
         setDone(true);
       }
     } catch (e) { alert("Could not generate report. Ensure the backend is running."); }
