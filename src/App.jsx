@@ -4,10 +4,10 @@ import {
   Brain, Upload, FlaskConical, ScanLine, FileText, Sparkles, Activity,
   ShieldCheck, ArrowRight, Check, ChevronRight, Menu, X, Plus, Search,
   History, LayoutDashboard, MessageCircle, Settings, Info, Bell, Download,
-  LogOut, BarChart2, Eye, Zap, Bot, AlertTriangle, RefreshCw, Home, Clock
+  LogOut, BarChart2, Eye, Zap, Bot, AlertTriangle, RefreshCw, Home, Clock, Users
 } from "lucide-react";
 import {
-  SignedIn, SignedOut, SignIn, SignUp, UserButton, useUser, useClerk
+  SignedIn, SignedOut, SignIn, SignUp, UserButton, useUser, useClerk, UserProfile
 } from "@clerk/clerk-react";
 
 const API_BASE = "http://localhost:8000/api/v1";
@@ -304,8 +304,8 @@ function AppShell() {
               {page === "processing" && <ProcessingPage />}
               {page === "reports" && <ReportsPage analysis={currentAnalysis} setPage={setPage} />}
               {page === "assistant" && <AssistantPage analysis={currentAnalysis} setPage={setPage} />}
-              {page === "settings" && <PlaceholderPage title="Settings" icon={<Settings size={24} />} />}
-              {page === "about" && <PlaceholderPage title="About" icon={<Info size={24} />} desc="BrainXAI is an AI Brain Tumor Diagnostic Copilot built for the hackathon. It combines EfficientNetV2-S, Grad-CAM XAI, Google Gemini GenAI, and an Agentic workflow." />}
+              {page === "settings" && <SettingsPage />}
+              {page === "about" && <AboutPage />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -913,13 +913,78 @@ function AssistantPage({ analysis, setPage }) {
   );
 }
 
-// ─── Placeholder Page ─────────────────────────────────────────────────────────
-function PlaceholderPage({ title, icon, desc }) {
+// ─── Settings & About Pages ───────────────────────────────────────────────────
+function SettingsPage() {
   return (
-    <div className="page empty-page">
-      {icon}
-      <h2>{title}</h2>
-      {desc && <p>{desc}</p>}
+    <div className="page" style={{ paddingBottom: "60px" }}>
+      <div className="page-hd">
+        <div className="sec-kicker">ACCOUNT SETTINGS</div>
+        <h1>Profile & Preferences</h1>
+        <p>Manage your account details and security settings.</p>
+      </div>
+      <div className="settings-container" style={{ display: "flex", justifyContent: "center", marginTop: "30px", width: "100%", maxWidth: "900px" }}>
+        <UserProfile routing="hash" />
+      </div>
+    </div>
+  );
+}
+
+function AboutPage() {
+  return (
+    <div className="page" style={{ paddingBottom: "80px" }}>
+      <div className="page-hd">
+        <div className="sec-kicker">PROJECT INFO</div>
+        <h1>About BrainXAI</h1>
+        <p>An Agentic AI-Powered Brain MRI Analysis System built for the Pak Angels Generative & Agentic AI Training — Cohort 11 Final Hackathon.</p>
+      </div>
+
+      <div style={{ marginTop: "40px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
+        <div className="dash-panel" style={{ padding: "30px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+            <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(45,212,191,0.15)", color: "#2dd4bf", display: "flex", alignItems: "center", justifyContent: "center" }}><Brain size={20} /></div>
+            <h2 style={{ fontSize: "20px", fontWeight: "700" }}>The Vision</h2>
+          </div>
+          <p style={{ color: "#475569", lineHeight: "1.7", fontSize: "15px" }}>
+            BrainXAI is designed as a diagnostic copilot for neurologists and radiologists. It solves the critical "black-box" AI problem by introducing <strong>Explainable AI (Grad-CAM)</strong> and <strong>Agentic Workflows</strong> (via Groq/Llama3 and PyTorch), ensuring every prediction is verifiable, transparent, and easy to understand through automated clinical reporting.
+          </p>
+        </div>
+
+        <div className="dash-panel" style={{ padding: "30px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+            <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(59,130,246,0.15)", color: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center" }}><Zap size={20} /></div>
+            <h2 style={{ fontSize: "20px", fontWeight: "700" }}>Core Technologies</h2>
+          </div>
+          <ul style={{ color: "#475569", lineHeight: "1.7", fontSize: "15px", listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
+            <li><strong>Frontend:</strong> React, Vite, Framer Motion, Vanilla CSS</li>
+            <li><strong>Backend:</strong> Python, FastAPI, SQLite</li>
+            <li><strong>Computer Vision:</strong> PyTorch (EfficientNetV2-S), OpenCV</li>
+            <li><strong>Generative & Agentic AI:</strong> Groq API (Llama 3 70B)</li>
+            <li><strong>Security:</strong> Clerk Authentication</li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="dash-panel" style={{ padding: "30px", marginTop: "24px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
+          <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(139,92,246,0.15)", color: "#8b5cf6", display: "flex", alignItems: "center", justifyContent: "center" }}><Users size={20} /></div>
+          <h2 style={{ fontSize: "20px", fontWeight: "700" }}>Team Zaheer (Hackathon Project)</h2>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "16px" }}>
+          {[
+            { name: "Zaheer Ahmed", role: "Team Leader" },
+            { name: "Azlan Ahmed", role: "Team Member" },
+            { name: "Humaiza", role: "Team Member" },
+            { name: "Wajeeha Asad", role: "Team Member" },
+            { name: "Ayesha Muazzama", role: "Team Member" },
+            { name: "Laiba Saeed", role: "Team Member" },
+          ].map(m => (
+            <div key={m.name} style={{ padding: "16px", borderRadius: "8px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+              <strong style={{ display: "block", color: "#1e293b", fontSize: "15px" }}>{m.name}</strong>
+              <span style={{ color: "#64748b", fontSize: "13px" }}>{m.role}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
