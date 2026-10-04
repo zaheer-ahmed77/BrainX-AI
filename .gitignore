@@ -50,4 +50,4 @@ backend/uploads/
 *.db
 backend/brainx.db
 .DS_Store
-*.pth
+# *.pth
