@@ -29,7 +29,8 @@ function Landing({ setAuthPage }) {
           </div>
           <div className="lnav-actions desktop-only">
             <SignedOut>
-              <button className="btn btn-primary" onClick={() => setAuthPage("signup")}>Access Platform <ArrowRight size={15} /></button>
+              <button className="btn btn-primary" onClick={() => { window.location.hash = '#/sign-up'; setAuthPage("signup"); }}>Access Platform <ArrowRight size={15} /></button>
+              <button className="btn btn-outline" style={{ marginLeft: "12px", border: "1px solid #cbd5e1" }} onClick={() => { window.location.hash = '#/sign-in'; setAuthPage("signin"); }}>Sign In</button>
             </SignedOut>
             <SignedIn>
               <UserButton />
@@ -43,7 +44,8 @@ function Landing({ setAuthPage }) {
         {menuOpen && (
           <div className="mobile-menu">
             <SignedOut>
-              <button className="btn btn-primary btn-block mb-12" onClick={() => setAuthPage("signup")}>Access Platform</button>
+              <button className="btn btn-primary btn-block mb-12" onClick={() => { window.location.hash = '#/sign-up'; setAuthPage("signup"); }}>Access Platform</button>
+              <button className="btn btn-outline btn-block mb-12" onClick={() => { window.location.hash = '#/sign-in'; setAuthPage("signin"); }}>Sign In</button>
             </SignedOut>
             <a href="#how" onClick={() => setMenuOpen(false)}>How it works</a>
             <a href="#features" onClick={() => setMenuOpen(false)}>Features</a>
@@ -68,7 +70,8 @@ function Landing({ setAuthPage }) {
             </div>
             <div className="hero-cta">
               <SignedOut>
-                <button className="btn btn-primary btn-lg" onClick={() => setAuthPage("signup")}>Access Platform <ArrowRight size={16} /></button>
+                <button className="btn btn-primary btn-lg" onClick={() => { window.location.hash = '#/sign-up'; setAuthPage("signup"); }}>Access Platform <ArrowRight size={16} /></button>
+                <button className="btn btn-outline btn-lg" style={{ marginLeft: "12px" }} onClick={() => { window.location.hash = '#/sign-in'; setAuthPage("signin"); }}>Sign In</button>
               </SignedOut>
               <SignedIn>
                 {/* Redirect to app if already signed in */}
