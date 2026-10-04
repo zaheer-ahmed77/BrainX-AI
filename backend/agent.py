@@ -27,10 +27,10 @@ def _get_client():
 
 import base64
 
-def validate_mri(image_path: str) -> bool:
+def validate_mri(image_path: str) -> tuple[bool, str]:
     """
     Agentic GenAI step: Check if the uploaded image is actually a brain MRI before processing.
-    Returns False (reject) if unsure or on any error.
+    Returns (True, "") if valid, (False, "reason") if invalid or error.
     """
     # Detect MIME type from extension
     ext = image_path.lower().rsplit('.', 1)[-1]
@@ -72,11 +72,13 @@ def validate_mri(image_path: str) -> bool:
         )
         answer = response.choices[0].message.content.strip().upper()
         print(f"[validate_mri] Vision model answer: '{answer}'")
-        return answer.startswith("YES")
+        if answer.startswith("YES"):
+            return True, ""
+        return False, "Image does not appear to be a Brain MRI scan."
     except Exception as e:
         print(f"[validate_mri] Validation error (blocking for safety): {e}")
         # Fail closed: if we cannot validate, reject the image
-        return False
+        return False, f"Validation system error: {str(e)}"
 
 def generate_explanation(analysis_data: Dict[str, Any]) -> str:
     """

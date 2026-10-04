@@ -60,9 +60,10 @@ async def analyze_mri(file: UploadFile = File(...), x_user_id: str = Header(None
         f.write(content)
 
     # 0. Agentic Image Validation (Check if it's an MRI)
-    if not validate_mri(save_path):
+    is_valid, validation_error = validate_mri(save_path)
+    if not is_valid:
         os.remove(save_path)
-        raise HTTPException(status_code=400, detail="Image rejected: This does not appear to be a Brain MRI scan. Please upload a valid MRI image.")
+        raise HTTPException(status_code=400, detail=f"Image rejected: {validation_error}")
 
     # 1. AI Analysis & Grad-CAM
     try:
