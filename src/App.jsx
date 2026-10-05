@@ -1078,9 +1078,14 @@ function CustomSignUp({ onSwitch }) {
     setLoading(true);
     setError("");
     try {
-      await signUp.create({ firstName, lastName, emailAddress: email, password });
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
-      setStep("verify");
+      const result = await signUp.create({ firstName, lastName, emailAddress: email, password });
+      
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+      } else {
+        await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+        setStep("verify");
+      }
     } catch (err) {
       setError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Sign up failed.");
     } finally {
