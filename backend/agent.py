@@ -25,53 +25,36 @@ def _get_client():
     _client = Groq(api_key=api_key)
     return _client
 
-import base64
+import google.generativeai as genai
+import PIL.Image
 
 def validate_mri(image_path: str) -> tuple[bool, str]:
     """
     Agentic GenAI step: Check if the uploaded image is actually a brain MRI before processing.
     Returns (True, "") if valid, (False, "reason") if invalid or error.
     """
-    # Detect MIME type from extension
-    ext = image_path.lower().rsplit('.', 1)[-1]
-    mime_map = {'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}
-    mime_type = mime_map.get(ext, 'image/jpeg')
-
     try:
-        with open(image_path, "rb") as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-
-        client = _get_client()
-        response = client.chat.completions.create(
-            model="llama-3.2-11b-vision-preview",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": (
-                                "You are a strict medical image classifier. "
-                                "Examine the image carefully. "
-                                "A Brain MRI scan is a grayscale medical image showing cross-sections of the human brain — it has NO faces, NO people, NO text, NO outdoor scenes, and NO natural photographs. "
-                                "Is this image a Brain MRI scan suitable for tumor analysis? "
-                                "Reply with ONLY the single word YES or NO. Nothing else."
-                            )
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{mime_type};base64,{encoded_string}",
-                            }
-                        }
-                    ]
-                }
-            ],
-            temperature=0.0,
-            max_tokens=5
+        api_key = os.getenv("GENAI_API_KEY")
+        if not api_key:
+            return False, "GENAI_API_KEY is not set in backend/.env"
+            
+        genai.configure(api_key=api_key)
+        
+        img = PIL.Image.open(image_path)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        
+        prompt = (
+            "You are a strict medical image classifier. "
+            "Examine the image carefully. "
+            "A Brain MRI scan is a grayscale medical image showing cross-sections of the human brain — it has NO faces, NO people, NO text, NO outdoor scenes, and NO natural photographs. "
+            "Is this image a Brain MRI scan suitable for tumor analysis? "
+            "Reply with ONLY the single word YES or NO. Nothing else."
         )
-        answer = response.choices[0].message.content.strip().upper()
-        print(f"[validate_mri] Vision model answer: '{answer}'")
+        
+        response = model.generate_content([prompt, img])
+        answer = response.text.strip().upper()
+        print(f"[validate_mri] Gemini vision answer: '{answer}'")
+        
         if answer.startswith("YES"):
             return True, ""
         return False, "Image does not appear to be a Brain MRI scan."
