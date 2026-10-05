@@ -34,10 +34,8 @@ def validate_mri(image_path: str) -> tuple[bool, str]:
     Returns (True, "") if valid, (False, "reason") if invalid or error.
     """
     try:
-        api_key = os.getenv("GENAI_API_KEY")
-        if not api_key:
-            return False, "GENAI_API_KEY is not set in backend/.env"
-            
+        # Check if GROQ_API_KEY is available implicitly via _get_client later
+
         ext = image_path.lower().rsplit('.', 1)[-1]
         mime_map = {'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}
         mime_type = mime_map.get(ext, 'image/jpeg')
@@ -53,35 +51,32 @@ def validate_mri(image_path: str) -> tuple[bool, str]:
             "Reply with ONLY the single word YES or NO. Nothing else."
         )
         
-        payload = {
-            "contents": [
+        client = _get_client()
+        response = client.chat.completions.create(
+            model="qwen/qwen3.8-27b",
+            messages=[
                 {
-                    "parts": [
-                        {"text": prompt},
+                    "role": "user",
+                    "content": [
                         {
-                            "inline_data": {
-                                "mime_type": mime_type,
-                                "data": encoded_string
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{mime_type};base64,{encoded_string}",
                             }
                         }
                     ]
                 }
             ],
-            "generationConfig": {
-                "temperature": 0.0,
-                "maxOutputTokens": 5
-            }
-        }
+            temperature=0.0,
+            max_tokens=5
+        )
         
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-        res = requests.post(url, json=payload)
-        res_data = res.json()
-        
-        if res.status_code != 200:
-            return False, f"Gemini API Error: {res_data.get('error', {}).get('message', 'Unknown Error')}"
-            
-        answer = res_data["candidates"][0]["content"]["parts"][0]["text"].strip().upper()
-        print(f"[validate_mri] Gemini vision answer: '{answer}'")
+        answer = response.choices[0].message.content.strip().upper()
+        print(f"[validate_mri] Groq vision answer: '{answer}'")
         
         if answer.startswith("YES"):
             return True, ""
