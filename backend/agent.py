@@ -25,8 +25,8 @@ def _get_client():
     _client = Groq(api_key=api_key)
     return _client
 
-import google.generativeai as genai
-import PIL.Image
+import base64
+import requests
 
 def validate_mri(image_path: str) -> tuple[bool, str]:
     """
@@ -38,10 +38,12 @@ def validate_mri(image_path: str) -> tuple[bool, str]:
         if not api_key:
             return False, "GENAI_API_KEY is not set in backend/.env"
             
-        genai.configure(api_key=api_key)
-        
-        img = PIL.Image.open(image_path)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        ext = image_path.lower().rsplit('.', 1)[-1]
+        mime_map = {'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}
+        mime_type = mime_map.get(ext, 'image/jpeg')
+
+        with open(image_path, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
         
         prompt = (
             "You are a strict medical image classifier. "
@@ -51,8 +53,34 @@ def validate_mri(image_path: str) -> tuple[bool, str]:
             "Reply with ONLY the single word YES or NO. Nothing else."
         )
         
-        response = model.generate_content([prompt, img])
-        answer = response.text.strip().upper()
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt},
+                        {
+                            "inline_data": {
+                                "mime_type": mime_type,
+                                "data": encoded_string
+                            }
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.0,
+                "maxOutputTokens": 5
+            }
+        }
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        res = requests.post(url, json=payload)
+        res_data = res.json()
+        
+        if res.status_code != 200:
+            return False, f"Gemini API Error: {res_data.get('error', {}).get('message', 'Unknown Error')}"
+            
+        answer = res_data["candidates"][0]["content"]["parts"][0]["text"].strip().upper()
         print(f"[validate_mri] Gemini vision answer: '{answer}'")
         
         if answer.startswith("YES"):
