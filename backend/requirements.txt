@@ -11,3 +11,4 @@ pillow
 opencv-python-headless
 numpy
 reportlab
+google-generativeai
