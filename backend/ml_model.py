@@ -19,6 +19,7 @@ CLASSES = ["Glioma", "Meningioma", "No Tumor", "Pituitary"]
 class BrainTumorModel:
     def __init__(self):
         self.model = None
+        self.is_loaded = False
         if not TORCH_AVAILABLE:
             return
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -27,9 +28,6 @@ class BrainTumorModel:
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
-        self._load_model()
-
-
     def _load_model(self):
         if not os.path.exists(MODEL_PATH):
             print(f"Warning: Model not found at {MODEL_PATH}")
@@ -43,14 +41,19 @@ class BrainTumorModel:
             self.model.load_state_dict(torch.load(MODEL_PATH, map_location=self.device))
             self.model.to(self.device)
             self.model.eval()
+            self.is_loaded = True
         except Exception as e:
             print(f"Error loading model: {e}")
             self.model = None
+            self.is_loaded = False
 
     def analyze(self, image_path, output_dir, analysis_id):
         if not TORCH_AVAILABLE:
             raise RuntimeError("PyTorch is not available due to environment DLL restrictions. Cannot perform inference.")
         
+        if not self.is_loaded:
+            self._load_model()
+            
         if self.model is None:
             raise RuntimeError(f"Trained model not found at {MODEL_PATH}. Please put your EfficientNet model there.")
 
